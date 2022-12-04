@@ -17,7 +17,7 @@ int main()
     ifstream file;
     file.open("day04.txt");
     string line, elf1, elf2;
-    int elf1low, elf1high, elf2low, elf2high, sum = 0;
+    int elf1low, elf1high, elf2low, elf2high, sum = 0, sum2 = 0;
 
     try
     {
@@ -40,6 +40,11 @@ int main()
             {
                 sum++;
             }
+            
+            if ((elf1low <= elf2high && elf2low <= elf1high) || elf2high <= elf1low && elf1high <= elf2low)
+            {
+                sum2++;
+            }
         }
     }
     catch (exception e)
@@ -48,7 +53,7 @@ int main()
         return 1;
     }
 
-    cout << "Sum: " << sum << "\n";
+    cout << "Sum: " << sum << "\nSum2: " << sum2 << endl;
     file.close();
     return 0;
 }
