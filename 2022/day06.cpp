@@ -19,9 +19,13 @@ int main()
     ifstream file;
     file.open("day06.txt");
     char c;
-    const int SIGSIZE = 4;
+    const int SIGSIZE = 14;
     int index = 0;
-    char signal[SIGSIZE] = { 'c', 'c', 'c', 'c' };
+    char signal[SIGSIZE];
+    for (int i = 0; i < SIGSIZE; i++)
+    {
+        signal[i] = ' ';
+    }
 
     try
     {
@@ -42,9 +46,17 @@ int main()
             char temp[SIGSIZE];
             copy(signal, signal + sizeof(signal), temp);
             sort(temp, temp + sizeof(temp));
-            if (!(temp[0] == temp[1] || temp[1] == temp[2] || temp[2] == temp[3]) && index > 3)
+            for (int i = 0; i < SIGSIZE - 1; i++)
             {
-                break;
+                if (temp[i] == temp[i + 1])
+                {
+                    break;
+                }
+                if (i == SIGSIZE - 2 && index >= SIGSIZE)
+                {
+                    cout << "Message begins after character " << index;
+                    return 0;
+                }
             }
         }
     }
@@ -54,9 +66,6 @@ int main()
         return 1;
     }
 
-    cout << "Signal begins after character " << index << endl;
-    for (int i = 0; i < SIGSIZE; i++)
-    {
-        cout << signal[i] << ",";
-    }
+    cout << "No signal detected\n";
+    return 0;
 }
