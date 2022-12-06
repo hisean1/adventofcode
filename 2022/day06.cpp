@@ -54,7 +54,7 @@ int main()
                 }
                 if (i == SIGSIZE - 2 && index >= SIGSIZE)
                 {
-                    cout << "Message begins after character " << index;
+                    cout << "Message begins after character " << index << endl;
                     return 0;
                 }
             }
