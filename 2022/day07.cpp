@@ -74,7 +74,6 @@ int main()
 
     if (available < UPDATESIZE)
     {
-        // We don't need to know *which* file, just how big it is....
         cout << "Smallest directory to free space: " << findFileToDelete(UPDATESIZE - available) << endl;
     }
 
@@ -214,8 +213,7 @@ void list()
             return;
         }
 
-        // Check for file or directory listing
-        if (v[0] == "dir")
+        if (v[0] == "dir")                              // Add new file or directory
         {
             current->files.push_back(createFile(v[1], current));
         }
@@ -224,6 +222,8 @@ void list()
             current->files.push_back(createFile(v[1], current, stoi(v[0])));
         }
     }
+
+    current->listed = true;
 }
 
 /// <summary>
