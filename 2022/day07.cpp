@@ -10,6 +10,7 @@
 #include <sstream>
 #include <istream>
 #include <vector>
+#include <algorithm>
 
 using namespace std;
 
@@ -28,15 +29,18 @@ void changeDirectory(string dir);
 void list();
 file createFile(string name, file* parentFile, int size = 0);
 int calculateSizes(file topdir);
+int findFileToDelete(int minsize);
 
 file root;
 file* current;
 ifstream input;
+vector<int> dsizes;
 int sum = 0;
 
 int main()
 {
-    enum command { cd, ls, dir };
+    const int DISKSPACE = 70000000;
+    const int UPDATESIZE = 30000000;
 
     input.open("day07.txt");
     string line;
@@ -65,8 +69,36 @@ int main()
     root.size = calculateSizes(root);
 
     cout << "Sum: " << sum << endl;
+
+    int available = DISKSPACE - root.size;
+
+    if (available < UPDATESIZE)
+    {
+        // We don't need to know *which* file, just how big it is....
+        cout << "Smallest directory to free space: " << findFileToDelete(UPDATESIZE - available) << endl;
+    }
+
     input.close();
     return 0;
+}
+
+/// <summary>
+/// Finds the size of the smallest directory that will free up enough space for an update
+/// </summary>
+/// <param name="minsize">Size of the update</param>
+/// <returns>Size of the smallest directory</returns>
+int findFileToDelete(int minsize)
+{
+    sort(dsizes.begin(), dsizes.end());
+
+    for (int i = 0; i < dsizes.size(); i++)
+    {
+        if (dsizes[i] > minsize)
+        {
+            return dsizes[i];
+        }
+    }
+    return -1;
 }
 
 /// <summary>
@@ -88,6 +120,7 @@ int calculateSizes(file f)
             sum += f.size;
         }
     }
+    dsizes.push_back(f.size);
     return f.size;
 }
 
@@ -180,6 +213,8 @@ void list()
             cout << "Empty list\n";
             return;
         }
+
+        // Check for file or directory listing
         if (v[0] == "dir")
         {
             current->files.push_back(createFile(v[1], current));
