@@ -12,6 +12,7 @@
 #include <iterator>
 #include <set>
 
+const int NUM_TAILS = 9;
 using namespace std;
 
 enum Dir {U, D, L, R};
@@ -27,9 +28,8 @@ struct coord
     }
 };
 
-void moveHead(coord& h, const int dist, const Dir d);
-void moveTail(coord& t, const coord& h, set<coord>& s);
-void visitCoord(const coord& t, set<coord>& s);
+void moveHead(coord& h, const Dir d);
+void moveTail(coord& t, const coord& h);
 
 int main()
 {
@@ -37,8 +37,7 @@ int main()
     input.open("day09.txt");
     string line;
 
-    coord head;
-    coord tail;
+    coord tails[NUM_TAILS + 1] = {};
     set<coord> grid;
     
     try
@@ -48,7 +47,12 @@ int main()
             throw runtime_error("Could not open file");
         }
 
-        visitCoord(tail, grid);     // Visit origin initially
+        for (int i = 0; i <= NUM_TAILS; i++)
+        {
+            tails[i].x = 0;
+            tails[i].y = 0;
+        }
+        grid.insert(tails[0]);     // Visit origin initially
 
         while (getline(input, line))
         {
@@ -73,8 +77,21 @@ int main()
             }
             
             distance = stoi(line.substr(2, line.length() - 2));
-            moveHead(head, distance, direction);
-            moveTail(tail, head, grid);
+
+            for (int i = 0; i < distance; i++)
+            {
+                moveHead(tails[0], direction);
+
+                // Move all tails
+                for (int j = 1; j <= NUM_TAILS; j++)
+                {
+                    moveTail(tails[j], tails[j - 1]);
+                    if (j == NUM_TAILS)
+                    {
+                        grid.insert(tails[NUM_TAILS]);
+                    }
+                }
+            }
         }
     }
     catch (exception e)
@@ -87,49 +104,51 @@ int main()
     input.close();
 }
 
-void moveHead(coord& h, const int dist, const Dir d)
+/// <summary>
+/// Moves the head coordinate 1 unit in a direction
+/// </summary>
+/// <param name="h">Coordinate of head</param>
+/// <param name="d">Direction to move</param>
+void moveHead(coord& h, const Dir d)
 {
     switch (d)
     {
     case U:
-        h.y += dist;
+        h.y += 1;
         break;
     case D:
-        h.y -= dist;
+        h.y -= 1;
         break;
     case L:
-        h.x -= dist;
+        h.x -= 1;
         break;
     case R:
-        h.x += dist;
+        h.x += 1;
     }
 }
 
-void moveTail(coord& t, const coord& h, set<coord>& s)
+/// <summary>
+/// Moves a tail knot according to its head
+/// </summary>
+/// <param name="t">Tail coordinate</param>
+/// <param name="h">Head coordinate</param>
+void moveTail(coord& t, const coord& h)
 {
     // Move diagonally first if needed
     if (abs(h.y - t.y) > 0 && abs(h.x - t.x) > 0 && (abs(h.y - t.y) > 1 || abs(h.x - t.x) > 1))
     {
         signbit(double(h.y - t.y)) ? t.y -= 1 : t.y += 1;
         signbit(double(h.x - t.x)) ? t.x -= 1 : t.x += 1;
-        visitCoord(t, s);
     }
 
     // Recover y coordinate if needed
     while (abs(h.y - t.y) > 1)
     {
         signbit(double(h.y - t.y)) ? t.y -= 1 : t.y += 1;
-        visitCoord(t, s);
     }
     //Recover x coordinate if needed
     while (abs(h.x - t.x) > 1)
     {
         signbit(double(h.x - t.x)) ? t.x -= 1 : t.x += 1;
-        visitCoord(t, s);
     }
-}
-
-void visitCoord(const coord& t, set<coord>& s)
-{
-    s.insert(t);
 }
