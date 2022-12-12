@@ -14,7 +14,7 @@ using namespace std;
 
 struct monkey
 {
-    queue<int> items;
+    queue<unsigned long long> items;
     int indexT;
     int indexF;
     int divisibility;
@@ -30,18 +30,19 @@ struct monkey
 
 monkey readMonkeyFromFile(ifstream& f);
 vector<string> tokenizeString(const string s);
-void tossMonkeyItems(vector<monkey>& monkeys, int i);
+void tossMonkeyItems(vector<monkey>& monkeys, monkey& m, int lcf);
+unsigned long long countInspections(const vector<monkey>& monkeys);
 
-const int NUM_ROUNDS = 20;
-const int UNDAMAGED_MODIFIER = 3;
+const int NUM_ROUNDS = 10000;
+const int UNDAMAGED_MODIFIER = 1;
 
 int main()
 {
     ifstream input;
     input.open("day11.txt");
     string line;
-    int inspectmax = 0;
-    int inspectmax2 = 0;
+    unsigned long long monkeybusiness = 0;
+    int lcf = 1;
     vector<monkey> monkeys;
 
     try
@@ -57,33 +58,25 @@ int main()
             if (line.substr(0, 6) == "Monkey")
             {
                 monkeys.push_back(readMonkeyFromFile(input));
+                lcf *= monkeys[monkeys.size() - 1].divisibility;
             }
         }
-        //cout << "monkey[0].items.size(): " << monkeys[0].items.size() << endl;
 
         // Toss items
         for (int i = 0; i < NUM_ROUNDS; i++)
         {
-            for (/*monkey m : monkeys*/int j = 0; j < monkeys.size(); j++)
+            for (int j = 0; j < monkeys.size(); j++)
             {
-                //cout << "New monkey\n";
-                tossMonkeyItems(monkeys, j);
+                tossMonkeyItems(monkeys, monkeys[j], lcf);
             }
-            //cout << "Round " << i + 1 << "\tmonkeys[0].items.front(): " << monkeys[0].items.front() << endl;
-        }
+            
+            int round = i + 1;
 
-        // Count inspections
-        for (int i = 0; i < monkeys.size(); i++)
-        {
-            cout << "Monkey " << i << " inspected " << monkeys[i].inspections << " items.\n";
-            if (monkeys[i].inspections > inspectmax)
+            if (round == 1 || round == 20 || round % 1000 == 0)
             {
-                inspectmax2 = inspectmax;
-                inspectmax = monkeys[i].inspections;
-            }
-            else if (monkeys[i].inspections > inspectmax2)
-            {
-                inspectmax2 = monkeys[i].inspections;
+                cout << "== After round " << round << " ==\n";
+                monkeybusiness = countInspections(monkeys);
+                cout << endl;
             }
         }
     }
@@ -94,7 +87,7 @@ int main()
     }
 
     input.close();
-    cout << "Monkey business: " << inspectmax * inspectmax2 << "\n";
+    cout << "Monkey business: " << monkeybusiness << "\n";
 }
 
 /// <summary>
@@ -114,7 +107,7 @@ monkey readMonkeyFromFile(ifstream& f)
         switch (i)
         {
         case 0: // Starting Items
-            // Read starting items (beginning index 2)
+            // Starting items begin at index 2)
             for (int j = 2; j <= v.size() - 1; j++)
             {
                 // Trim comma if necessary
@@ -123,9 +116,7 @@ monkey readMonkeyFromFile(ifstream& f)
                     v[j] = v[j].substr(0, v[j].length() - 1);
                 }
                 m.items.push(stoi(v[j]));
-                //cout << stoi(v[j]) << " ";
             }
-            //cout << endl;
             break;
         case 1: // Operation
             if (v[4] == "*")
@@ -177,25 +168,47 @@ vector<string> tokenizeString(const string s)
     return v;
 }
 
-void tossMonkeyItems(vector<monkey>& monkeys, int i)
+/// <summary>
+/// 
+/// </summary>
+/// <param name="monkeys"></param>
+/// <param name="i"></param>
+void tossMonkeyItems(vector<monkey>& monkeys, monkey& m, int lcf)
 {
-    while (/*int i = 0; i < m.items.size(); i++*/monkeys[i].items.size() > 0)
+    while (m.items.size() > 0)
     {
-        //cout << "\tItem: " << monkeys[i].items.front() << " | oldmodifier: " << monkeys[i].oldmodifier;
-        int modifier = monkeys[i].oldmodifier ? monkeys[i].items.front() : monkeys[i].modifier;                            // Set modifier
-        //cout << " | Modifier: " << modifier;
-        monkeys[i].items.front() = monkeys[i].addition ? monkeys[i].items.front() + modifier : monkeys[i].items.front() * modifier; // Adjust worry value
-        monkeys[i].inspections++;
-        //cout << " | New worry: " << monkeys[i].items.front();
-        monkeys[i].items.front() /= UNDAMAGED_MODIFIER;                                                  // Monkey gets bored
-        //cout << " | Bored worry: " << monkeys[i].items.front() << endl;
-        int index = (monkeys[i].items.front() % monkeys[i].divisibility == 0) ? monkeys[i].indexT : monkeys[i].indexF;              // Choose new monkey
-        //cout << "Throwing " << monkeys[i].items.front() << " to monkey " << index << endl;
-        //cout << "monkey " << index << " size: " << monkeys[index].items.size() << " -> ";
-        monkeys[index].items.push(monkeys[i].items.front());                                             // Toss item to target
-        //cout << monkeys[index].items.size() << endl;
-        //cout << "m.items size: " << monkeys[i].items.size() << " -> ";
-        monkeys[i].items.pop();                                                                          // Remove item from current monkey
-        //cout << monkeys[i].items.size() << endl;
+        int modifier = m.oldmodifier ? m.items.front() : m.modifier;                            // Set modifier
+        m.items.front() = m.addition ? m.items.front() + modifier : m.items.front() * modifier; // Adjust worry value
+        m.inspections++;                                                                        // Increment inspection
+        m.items.front() /= UNDAMAGED_MODIFIER;                                                  // Monkey gets bored
+        m.items.front() %= lcf;                                                                 // 'find another way to keep worry manageable'
+        int index = (m.items.front() % m.divisibility == 0) ? m.indexT : m.indexF;              // Choose new monkey
+        monkeys[index].items.push(m.items.front());                                             // Toss item to target
+        m.items.pop();                                                                          // Remove item from current monkey
     }
+}
+
+/// <summary>
+/// Counts each monkey's inspections and prints to cout
+/// </summary>
+/// <param name="monkeys">Monkeys to check</param>
+unsigned long long countInspections(const vector<monkey>& monkeys)
+{
+    unsigned long long inspectmax = 0;
+    unsigned long long inspectmax2 = 0;
+
+    for (int i = 0; i < monkeys.size(); i++)
+    {
+        cout << "Monkey " << i << " inspected " << monkeys[i].inspections << " items.\n";
+        if (monkeys[i].inspections > inspectmax)
+        {
+            inspectmax2 = inspectmax;
+            inspectmax = monkeys[i].inspections;
+        }
+        else if (monkeys[i].inspections > inspectmax2)
+        {
+            inspectmax2 = monkeys[i].inspections;
+        }
+    }
+    return inspectmax * inspectmax2;
 }
